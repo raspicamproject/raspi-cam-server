@@ -29,7 +29,8 @@ app.use(express.static(path.join(__dirname, "/public")));
 var photoRouter = express.Router();
 
 photoRouter.get("/:id", function (req, res) {
-    var file = path.join(__dirname, "/public/upload", req.params.id);
+    var format = req.query.format || "jpg";
+    var file = path.join(__dirname, "/public/upload", req.params.id, ".", format);
     fs.exists(file, function (exists) {
         if (exists)
             res.sendFile(file);
@@ -38,9 +39,14 @@ photoRouter.get("/:id", function (req, res) {
     });
 });
 
-photoRouter.post("/", function (req, res) {
-    io.sockets.emit("newPhoto", "ok");
-    res.sendStatus(200);
+photoRouter.post("/", multiparty(),function (req, res) {
+    fs.readFile(req.files.file.path, function(err, data){
+        if (!err) {
+            var buffer = new Buffer(data).toString('base64');
+            io.sockets.emit("newPhoto", "data:"+req.files.file.type+";base64,"+buffer);
+            res.sendStatus(200);
+        }
+    });
 });
 
 app.use("/photo", photoRouter);
