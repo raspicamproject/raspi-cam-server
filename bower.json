@@ -1,7 +1,7 @@
 {
-  "name": "raspi-cam",
-  "version": "0.0.0",
-  "homepage": "https://github.com/simonlebras/raspi-cam",
+  "name": "raspi-cam-server",
+  "version": "1.0.0",
+  "homepage": "https://github.com/simonlebras/raspi-cam-server",
   "authors": [
     "Simon Le Bras <lebras.simon@gmail.com>"
   ],

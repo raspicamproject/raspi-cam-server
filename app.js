@@ -11,17 +11,16 @@ var express = require("express"),
     methodOverride = require("method-override"),
     multiparty = require("connect-multiparty"),
     favicon = require("serve-favicon"),
-    path = require("path");
+    path = require("path"),
+    uuid = require('node-uuid');
 
 app.set("port", 3000);
 app.use(logger('combined'));
-app.use(favicon(__dirname + "/public/img/favicon.ico"));
 app.use(compression());
-app.use(methodOverride())
+app.use(favicon(__dirname + "/public/img/favicon.ico"));
+app.use(methodOverride());
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({
-    extended: true
-}));
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(multiparty());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "/public")));
@@ -39,18 +38,27 @@ photoRouter.get("/:id", function (req, res) {
     });
 });
 
-photoRouter.post("/", multiparty(),function (req, res) {
-    fs.readFile(req.files.file.path, function(err, data){
-        if (!err) {
-            var buffer = new Buffer(data).toString('base64');
-            io.sockets.emit("newPhoto", "data:"+req.files.file.type+";base64,"+buffer);
-            res.sendStatus(200);
-        }
-    });
+photoRouter.post("/", function (req, res) {
+    var file = req.files.file;
+    if (typeof file !== "undefined") {
+        fs.readFile(file.path, function (err, data) {
+            if (!err) {
+                io.sockets.emit("image", "data:" + file.type + ";base64," + new Buffer(data).toString('base64'));
+                res.sendStatus(200);
+            }
+        });
+
+        setImmediate(function () {
+            var uuid = uuid.v4();
+            //TODO handle file save
+        })
+    } else {
+        res.sendStatus(400);
+    }
 });
 
 app.use("/photo", photoRouter);
 
-server.listen(app.get("port") || 8080, function () {
-    console.log("Server listening on port ", app.get("port") || 8080);
+server.listen(app.get("port"), function () {
+    console.log("Server listening on port ", app.get("port"));
 });
