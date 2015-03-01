@@ -34,10 +34,8 @@ photoRouter.get('/:id', function(req, res) {
     var format = req.query.format || 'jpg';
     var file = path.join(__dirname, '/public/upload', req.params.id + '.' + format);
     fs.exists(file, function(exists) {
-        if (exists)
-            res.sendFile(file);
-        else
-            res.sendStatus(404);
+        if (exists) res.sendFile(file);
+        else res.sendStatus(404);
     });
 });
 
@@ -48,7 +46,6 @@ photoRouter.post('/', function(req, res) {
             MIMETypeComponents = MIMEType.split('/'),
             type = MIMETypeComponents[0],
             subtype = MIMETypeComponents[1];
-
         if (type === 'image') {
             fs.readFile(file.path, function(err, data) {
                 if (err) {
@@ -56,10 +53,10 @@ photoRouter.post('/', function(req, res) {
                 } else {
                     io.sockets.emit('image', 'data:' + MIMEType + ';base64,' + data.toString('base64'));
                     res.sendStatus(200);
+                    setImmediate(function() {
+                        fs.createReadStream(file.path).pipe(fs.createWriteStream(path.join(__dirname, '/public/upload/', uuid.v4() + '.' + subtype)));
+                    });
                 }
-            });
-            setImmediate(function() {
-                fs.createReadStream(file.path).pipe(fs.createWriteStream(path.join(__dirname, '/public/upload/', uuid.v4() + '.' + subtype)));
             });
         } else {
             res.sendStatus(400);
@@ -79,6 +76,7 @@ process.on('SIGINT', function() {
     fsHelper.clearDir(path.join(__dirname, '/public/upload'));
     process.exit();
 });
+
 process.on('uncaughtException', function() {
     fsHelper.clearDir(path.join(__dirname, '/public/upload'));
     process.exit();
