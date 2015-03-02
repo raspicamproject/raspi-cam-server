@@ -66,7 +66,7 @@ photoRouter.post('/', function(req, res) {
     }
 });
 
-app.use('/photo', photoRouter);
+app.use('/photos', photoRouter);
 
 server.listen(app.get('port'), function() {
     console.log('Server listening on port ', app.get('port'));
