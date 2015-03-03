@@ -32,7 +32,7 @@ var photoRouter = express.Router();
 
 photoRouter.get('/:id', function(req, res) {
     var format = req.query.format || 'jpg';
-    var file = path.join(__dirname, '/public/upload', req.params.id + '.' + format);
+    var file = path.join(__dirname, '/public/upload', path.normalize(req.params.id) + '.' + format);
     fs.exists(file, function(exists) {
         if (exists) res.sendFile(file);
         else res.sendStatus(404);
