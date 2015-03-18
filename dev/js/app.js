@@ -1,5 +1,5 @@
 window.addEventListener('load', function() {
-    var socket = io.connect('http://localhost:3000');
+    var socket = io.connect('http://149.91.83.88:3000');
     var container = document.querySelector('.images');
     socket.on('image', function(data) {
         new Promise(function(resolve, reject) {
