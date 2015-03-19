@@ -1,6 +1,7 @@
 var express = require('express'),
     app = express(),
     cv = require('opencv'),
+    mail = require('./lib/mail.js'),
     http = require('http'),
     fs = require('fs'),
     fsHelper = require("./lib/fsHelper.js"),
@@ -68,9 +69,13 @@ photoRouter.post('/', function (req, res) {
                                 var x = faces[i]
                                 im.ellipse(x.x + x.width / 2, x.y + x.height / 2, x.width / 2, x.height / 2, [0, 255, 0], 3);
                             }
-                            io.sockets.emit('image', 'data:' + MIMEType + ';base64,' + im.toBuffer().toString('base64'));
+                            var picture = 'data:' + MIMEType + ';base64,' + im.toBuffer().toString('base64');
+                            io.sockets.emit('image', picture);
                             res.sendStatus(200);
                             setImmediate(function () {
+                                mail.send(picture, function(err, res){
+                                    console.log('An error occured while sending th email: ' + err.toString());
+                                });
                                 im.save(path.join(__dirname, '/public/upload/', uuid.v4() + '.' + subtype));
                             });
                         });
