@@ -1,5 +1,7 @@
+
 var express = require('express'),
     app = express(),
+    cv = require('opencv'),
     http = require('http'),
     fs = require('fs'),
     fsHelper = require("./lib/fsHelper.js"),
@@ -48,22 +50,40 @@ photoRouter.post('/', function(req, res) {
             subtype = MIMETypeComponents[1];
         if (type === 'image') {
             fs.readFile(file.path, function(err, data) {
-                if (err) {
-                    return res.sendStatus(500);
-                } else {
-                    io.sockets.emit('image', 'data:' + MIMEType + ';base64,' + data.toString('base64'));
-                    res.sendStatus(200);
-                    setImmediate(function() {
-                        fs.createReadStream(file.path).pipe(fs.createWriteStream(path.join(__dirname, '/public/upload/', uuid.v4() + '.' + subtype)));
-                    });
+                    if (err) {
+                        return res.sendStatus(500);
+                    } else {
+                        cv.readImage(data, function(err, im) {
+                                if (err) {
+                                    return res.sendStatus(500);
+                                }
+                                im.detectObject(cv.FACE_CASCADE, {}, function(err, faces) {
+                                        if (err) {
+                                            return res.sendStatus(500);
+                                        }
+                                        if (faces.length === 0) {
+                                            console.log('No face detected');
+                                            return res.sendStatus(200);
+                                        }
+                                        for (var i = 0; i < faces.length; i++) {
+                                            var x = faces[i]
+                                            im.ellipse(x.x + x.width/2, x.y + x.height/2, x.width/2, x.height/2, [0,255,0],3 );
+                                        }
+                                        io.sockets.emit('image', 'data:' + MIMEType + ';base64,' + im.toBuffer().toString('base64'));
+                                        res.sendStatus(200);
+                                        setImmediate(function() {
+                                                im.save(path.join(__dirname, '/public/upload/', uuid.v4() + '.' + subtype));
+                                        });
+                                });
+                        });
                 }
             });
-        } else {
-            res.sendStatus(400);
-        }
     } else {
         res.sendStatus(400);
     }
+} else {
+    res.sendStatus(400);
+}
 });
 
 app.use('/photos', photoRouter);
