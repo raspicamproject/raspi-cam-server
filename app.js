@@ -1,4 +1,3 @@
-
 var express = require('express'),
     app = express(),
     cv = require('opencv'),
@@ -32,16 +31,16 @@ app.use(express.static(path.join(__dirname, '/public')));
 
 var photoRouter = express.Router();
 
-photoRouter.get('/:id', function(req, res) {
+photoRouter.get('/:id', function (req, res) {
     var format = req.query.format || 'jpg';
     var file = path.join(__dirname, '/public/upload', path.normalize(req.params.id) + '.' + format);
-    fs.exists(file, function(exists) {
+    fs.exists(file, function (exists) {
         if (exists) res.sendFile(file);
         else res.sendStatus(404);
     });
 });
 
-photoRouter.post('/', function(req, res) {
+photoRouter.post('/', function (req, res) {
     var file = req.files.file;
     if (typeof file !== 'undefined') {
         var MIMEType = file.type,
@@ -49,59 +48,59 @@ photoRouter.post('/', function(req, res) {
             type = MIMETypeComponents[0],
             subtype = MIMETypeComponents[1];
         if (type === 'image') {
-            fs.readFile(file.path, function(err, data) {
-                    if (err) {
-                        return res.sendStatus(500);
-                    } else {
-                        cv.readImage(data, function(err, im) {
-                                if (err) {
-                                    return res.sendStatus(500);
-                                }
-                                im.detectObject(cv.FACE_CASCADE, {}, function(err, faces) {
-                                        if (err) {
-                                            return res.sendStatus(500);
-                                        }
-                                        if (faces.length === 0) {
-                                            console.log('No face detected');
-                                            return res.sendStatus(200);
-                                        }
-                                        for (var i = 0; i < faces.length; i++) {
-                                            var x = faces[i]
-                                            im.ellipse(x.x + x.width/2, x.y + x.height/2, x.width/2, x.height/2, [0,255,0],3 );
-                                        }
-                                        io.sockets.emit('image', 'data:' + MIMEType + ';base64,' + im.toBuffer().toString('base64'));
-                                        res.sendStatus(200);
-                                        setImmediate(function() {
-                                                im.save(path.join(__dirname, '/public/upload/', uuid.v4() + '.' + subtype));
-                                        });
-                                });
+            fs.readFile(file.path, function (err, data) {
+                if (err) {
+                    return res.sendStatus(500);
+                } else {
+                    cv.readImage(data, function (err, im) {
+                        if (err) {
+                            return res.sendStatus(500);
+                        }
+                        im.detectObject(cv.FACE_CASCADE, {}, function (err, faces) {
+                            if (err) {
+                                return res.sendStatus(500);
+                            }
+                            if (faces.length === 0) {
+                                console.log('No face detected');
+                                return res.sendStatus(200);
+                            }
+                            for (var i = 0; i < faces.length; i++) {
+                                var x = faces[i]
+                                im.ellipse(x.x + x.width / 2, x.y + x.height / 2, x.width / 2, x.height / 2, [0, 255, 0], 3);
+                            }
+                            io.sockets.emit('image', 'data:' + MIMEType + ';base64,' + im.toBuffer().toString('base64'));
+                            res.sendStatus(200);
+                            setImmediate(function () {
+                                im.save(path.join(__dirname, '/public/upload/', uuid.v4() + '.' + subtype));
+                            });
                         });
+                    });
                 }
             });
+        } else {
+            res.sendStatus(400);
+        }
     } else {
         res.sendStatus(400);
     }
-} else {
-    res.sendStatus(400);
-}
 });
 
 app.use('/photos', photoRouter);
 
-server.listen(app.get('port'), function() {
+server.listen(app.get('port'), function () {
     console.log('Server listening on port ', app.get('port'));
 });
 
-process.on('SIGINT', function() {
+process.on('SIGINT', function () {
     fsHelper.clearDir(path.join(__dirname, '/public/upload'));
     process.exit();
 });
 
-process.on('uncaughtException', function() {
+process.on('uncaughtException', function () {
     fsHelper.clearDir(path.join(__dirname, '/public/upload'));
     process.exit();
 });
 
-process.on('exit', function() {
+process.on('exit', function () {
     fsHelper.clearDir(path.join(__dirname, '/public/upload'));
 });
